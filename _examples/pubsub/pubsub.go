@@ -15,7 +15,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 	"golang.org/x/net/context"
 )
 

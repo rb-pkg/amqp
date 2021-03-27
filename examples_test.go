@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 )
 
 func ExampleConfig_timeout() {
