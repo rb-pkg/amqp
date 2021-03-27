@@ -2,6 +2,14 @@
 
 # Go RabbitMQ Client Library
 
+This is original streadway/amqp with some improvements by [@ergoz](https://github.com/ergoz)
+
+## Improvements
+
+ - Add sync.Pool for amqp.Publish
+ - Add sync.Pool for amqp.Delivery
+
+
 This is an AMQP 0.9.1 client with RabbitMQ extensions in Go.
 
 ## Project Maturity
