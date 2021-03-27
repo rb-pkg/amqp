@@ -1323,7 +1323,12 @@ When Publish does not return an error and the channel is in confirm mode, the
 internal counter for DeliveryTags with the first confirmation starts at 1.
 
 */
-func (ch *Channel) Publish(exchange, key string, mandatory, immediate bool, msg Publishing) error {
+func (ch *Channel) Publish(exchange, key string, mandatory, immediate bool, msg *Publishing) error {
+	if msg == nil {
+		// todo I don't know is it good idea but it is ok for me :)
+		return nil
+	}
+
 	if err := msg.Headers.Validate(); err != nil {
 		return err
 	}
@@ -1331,28 +1336,31 @@ func (ch *Channel) Publish(exchange, key string, mandatory, immediate bool, msg 
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	if err := ch.send(&basicPublish{
-		Exchange:   exchange,
-		RoutingKey: key,
-		Mandatory:  mandatory,
-		Immediate:  immediate,
-		Body:       msg.Body,
-		Properties: properties{
-			Headers:         msg.Headers,
-			ContentType:     msg.ContentType,
-			ContentEncoding: msg.ContentEncoding,
-			DeliveryMode:    msg.DeliveryMode,
-			Priority:        msg.Priority,
-			CorrelationId:   msg.CorrelationId,
-			ReplyTo:         msg.ReplyTo,
-			Expiration:      msg.Expiration,
-			MessageId:       msg.MessageId,
-			Timestamp:       msg.Timestamp,
-			Type:            msg.Type,
-			UserId:          msg.UserId,
-			AppId:           msg.AppId,
-		},
-	}); err != nil {
+	bp := acquireBasicPublish()
+	defer releaseBasicPublishing(bp)
+
+	bp.Exchange = exchange
+	bp.RoutingKey = key
+	bp.Mandatory = mandatory
+	bp.Immediate = immediate
+	bp.Body = msg.Body
+	bp.Properties = properties{
+		Headers:         msg.Headers,
+		ContentType:     msg.ContentType,
+		ContentEncoding: msg.ContentEncoding,
+		DeliveryMode:    msg.DeliveryMode,
+		Priority:        msg.Priority,
+		CorrelationId:   msg.CorrelationId,
+		ReplyTo:         msg.ReplyTo,
+		Expiration:      msg.Expiration,
+		MessageId:       msg.MessageId,
+		Timestamp:       msg.Timestamp,
+		Type:            msg.Type,
+		UserId:          msg.UserId,
+		AppId:           msg.AppId,
+	}
+
+	if err := ch.send(bp); err != nil {
 		return err
 	}
 

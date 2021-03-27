@@ -6,25 +6,26 @@ import (
 )
 
 var (
-	poolPublishing sync.Pool
-	poolDelivery   sync.Pool
+	poolPublishing      sync.Pool
+	poolBasicPublishing sync.Pool
+	poolDelivery        sync.Pool
 )
 
-func (p *Publishing) Reset() {
-	p.Headers = nil
-	p.ContentType = ""
-	p.ContentEncoding = ""
-	p.DeliveryMode = 0
-	p.Priority = 0
-	p.CorrelationId = ""
-	p.ReplyTo = ""
-	p.Expiration = ""
-	p.MessageId = ""
-	p.Timestamp = time.Time{}
-	p.Type = ""
-	p.UserId = ""
-	p.AppId = ""
-	p.Body = []byte{}
+func (c *Publishing) Reset() {
+	c.Headers = nil
+	c.ContentType = ""
+	c.ContentEncoding = ""
+	c.DeliveryMode = 0
+	c.Priority = 0
+	c.CorrelationId = ""
+	c.ReplyTo = ""
+	c.Expiration = ""
+	c.MessageId = ""
+	c.Timestamp = time.Time{}
+	c.Type = ""
+	c.UserId = ""
+	c.AppId = ""
+	c.Body = []byte{}
 }
 
 // AcquirePublishing returns an empty Publishing instance from publishing pool.
@@ -48,6 +49,38 @@ func ReleasePublishing(pub *Publishing) {
 		pub.Reset()
 	}
 	poolPublishing.Put(pub)
+}
+
+func (msg *basicPublish) Reset() {
+	msg.Exchange = ""
+	msg.RoutingKey = ""
+	msg.Mandatory = false
+	msg.Immediate = false
+	msg.Properties = properties{}
+	msg.Body = []byte{}
+}
+
+// acquireBasicPublish returns an empty basicPublish instance from basic Publish pool.
+//
+// The returned basicPublish instance may be passed to releaseBasicPublishing when it is
+// no longer needed. This allows basicPublish recycling, reduces GC pressure
+// and usually improves performance.
+func acquireBasicPublish() *basicPublish {
+	v := poolBasicPublishing.Get()
+	if v == nil {
+		return &basicPublish{}
+	}
+	return v.(*basicPublish)
+}
+
+// releaseBasicPublishing returns pub acquired via acquireBasicPublishing to basicPublish pool.
+//
+// It is forbidden accessing bPub and/or its' members after returning it to request pool.
+func releaseBasicPublishing(bPub *basicPublish) {
+	if bPub != nil {
+		bPub.Reset()
+	}
+	poolBasicPublishing.Put(bPub)
 }
 
 func (d *Delivery) Reset() {
